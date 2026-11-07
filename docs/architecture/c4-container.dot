@@ -1,0 +1,47 @@
+digraph C4 {
+  graph [rankdir=TB, bgcolor="white", pad=0.4, nodesep=0.7, ranksep=0.75, fontname="Helvetica", splines=spline];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", penwidth=1.2, margin="0.25,0.15"];
+  edge  [fontname="Helvetica", fontsize=10, color="#707070", fontcolor="#505050", arrowsize=0.8];
+
+  title [shape=plaintext, style="", label=<<B><FONT POINT-SIZE="18">Container diagram (C4 · Nivel 2) · Checkout System</FONT></B><BR/><FONT POINT-SIZE="11" COLOR="#505050">Estado final tras la migración con Strangler Fig (Labs 19-20)</FONT>>];
+
+  client [fillcolor="#08427B", color="#073B6F", fontcolor="white",
+    label=<<B><FONT POINT-SIZE="14">Cliente</FONT></B><BR/><FONT POINT-SIZE="10">[Person]</FONT><BR/><BR/><FONT POINT-SIZE="11">Realiza pedidos de compra<BR/>(curl / aplicación web)</FONT>>];
+
+  subgraph cluster_system {
+    label=<<B>Checkout System</B><BR/><FONT POINT-SIZE="10">[Software System]</FONT>>;
+    labeljust="l"; fontname="Helvetica"; fontsize=12; fontcolor="#444444";
+    style="dashed,rounded"; color="#888888"; penwidth=1.3; margin=22;
+
+    facade [fillcolor="#438DD5", color="#3C7FC0", fontcolor="white",
+      label=<<B><FONT POINT-SIZE="14">Fachada (Strangler Facade)</FONT></B><BR/><FONT POINT-SIZE="10">[Container: Node.js / Express · :3000]</FONT><BR/><BR/><FONT POINT-SIZE="11">Punto de entrada único. Expone POST /checkout<BR/>y enruta según el feature flag STRANGLE_PAYMENT</FONT>>];
+
+    inv [fillcolor="#438DD5", color="#3C7FC0", fontcolor="white",
+      label=<<B><FONT POINT-SIZE="14">Inventory Service</FONT></B><BR/><FONT POINT-SIZE="10">[Container: Node.js / Express · :4001]</FONT><BR/><BR/><FONT POINT-SIZE="11">Verifica la disponibilidad<BR/>de productos</FONT>>];
+
+    pay [fillcolor="#438DD5", color="#3C7FC0", fontcolor="white",
+      label=<<B><FONT POINT-SIZE="14">Payment Service</FONT></B><BR/><FONT POINT-SIZE="10">[Container: Node.js / Express · :4002]</FONT><BR/><BR/><FONT POINT-SIZE="11">Procesa y aprueba<BR/>los pagos</FONT>>];
+
+    mono [fillcolor="#E6E6E6", color="#9A9A9A", fontcolor="#6B6B6B", style="rounded,filled,dashed",
+      label=<<B><FONT POINT-SIZE="14">Monolito (retirado)</FONT></B><BR/><FONT POINT-SIZE="10">[Container: Node.js / Express · :4000]</FONT><BR/><BR/><FONT POINT-SIZE="11">Sistema legado. Sin tráfico;<BR/>solo destino de rollback</FONT>>];
+
+    {rank=same; inv; pay; mono}
+  }
+
+  title -> client [style=invis];
+  client -> facade [label="  Envía pedidos\n  [HTTP/JSON]"];
+  facade -> inv   [label="Consulta stock\n[HTTP · GET /check-stock]"];
+  facade -> pay   [label="Procesa el pago\n[HTTP · POST /process-payment]"];
+  facade -> mono  [label="Solo en rollback\n(STRANGLE_PAYMENT=false)", style=dashed, color="#AAAAAA", fontcolor="#8A8A8A"];
+
+  legend [shape=plaintext, style="", label=<
+    <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4">
+      <TR><TD COLSPAN="2" ALIGN="LEFT"><B><FONT POINT-SIZE="11">Leyenda</FONT></B></TD></TR>
+      <TR><TD BGCOLOR="#08427B" WIDTH="18" HEIGHT="12"></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="10">Persona</FONT></TD></TR>
+      <TR><TD BGCOLOR="#438DD5" WIDTH="18" HEIGHT="12"></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="10">Contenedor activo</FONT></TD></TR>
+      <TR><TD BGCOLOR="#E6E6E6" WIDTH="18" HEIGHT="12"></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="10">Contenedor retirado</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><FONT POINT-SIZE="10">- - -&gt;</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="10">Ruta de rollback</FONT></TD></TR>
+      <TR><TD COLSPAN="2" ALIGN="LEFT"><FONT POINT-SIZE="10" COLOR="#505050">Todas las llamadas propagan el encabezado W3C traceparent<BR/>(OpenTelemetry: mismo traceId en los 3 servicios)</FONT></TD></TR>
+    </TABLE>>];
+  mono -> legend [style=invis];
+}
