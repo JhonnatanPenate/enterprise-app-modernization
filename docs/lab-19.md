@@ -54,7 +54,6 @@ Run `npm install` inside each service folder first.
 
 **Before (`STRANGLE_INVENTORY=false`):** every request is resolved by the monolith.
 
-![](evidence/lab-19-c-fachada-false-inicio.png)
 ![](evidence/lab-19-d1-strangle-false.png)
 
 **Modernized (`STRANGLE_INVENTORY=true`):** stock comes from the microservice and payment from the monolith. Out-of-stock rejections now come from the new service.
